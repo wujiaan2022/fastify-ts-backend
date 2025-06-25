@@ -1,68 +1,83 @@
-import Fastify from "fastify"
-import { postsRoutes } from "./posts.routes"
+import Fastify from "fastify";
+import { postsRoutes } from "./posts.routes";
+import "../../core/database/database.plugin";
 
 describe("POST /posts", () => {
-    it("should create a new post and return it with a 201 status code", async () => {
-        const app = Fastify()
+  // ✅ Move mockPosts here so both tests can use it
+  const mockPosts = [
+    {
+      id: 1,
+      img_url: "http://example.com/image1.jpg",
+      caption: "First post",
+    },
+    {
+      id: 2,
+      img_url: "http://example.com/image2.jpg",
+      caption: "Second post",
+    },
+  ];
 
-        const newPostPayload = {
-            img_url: "http://example.com/new-image.jpg",
-            caption: "A brand new post from our test!",
-        }
+  it("should create a new post and return it with a 201 status code", async () => {
+    const app = Fastify();
 
-        const createdPost = { ...newPostPayload, id: 1 }
+    const newPostPayload = {
+      img_url: "http://example.com/new-image.jpg",
+      caption: "A brand new post from our test!",
+    };
 
-        app.decorate("transactions", {
-            posts: {
-                getById: jest.fn(),
-                getAll: jest.fn(),
-                create: jest.fn().mockReturnValue(createdPost),
-            },
-        })
+    const createdPost = { ...newPostPayload, id: 1 };
 
-        app.register(postsRoutes)
+    app.decorate("transactions", {
+      posts: {
+        getById: jest.fn(),
+        getAll: jest.fn().mockReturnValue(mockPosts), // ✅ now visible
+        create: jest.fn((data) => ({ ...data, id: 1 })), // ✅ simulate DB create
+      },
+      reels: {
+        getAll: jest.fn(),
+      },
+      tagged: {
+        getAll: jest.fn(),
+      },
+    });
 
-        const response = await app.inject({
-            method: "POST",
-            url: "/posts",
-            payload: newPostPayload,
-        })
+    app.register(postsRoutes);
 
-        expect(response.statusCode).toBe(201)
-        expect(JSON.parse(response.payload)).toEqual(createdPost)
-    })
-    it("should get all posts and return them with a 200 status code", async () => {
-        const app = Fastify()
+    const response = await app.inject({
+      method: "POST",
+      url: "/posts",
+      payload: newPostPayload,
+    });
 
-        const mockPosts = [
-            {
-                id: 1,
-                img_url: "http://example.com/image1.jpg",
-                caption: "First post",
-            },
-            {
-                id: 2,
-                img_url: "http://example.com/image2.jpg",
-                caption: "Second post",
-            },
-        ]
+    expect(response.statusCode).toBe(201);
+    expect(JSON.parse(response.payload)).toEqual(createdPost);
+  });
 
-        app.decorate("transactions", {
-            posts: {
-                getById: jest.fn(),
-                getAll: jest.fn().mockReturnValue(mockPosts), // mock the service
-                create: jest.fn(),
-            },
-        })
+  it("should get all posts and return them with a 200 status code", async () => {
+    const app = Fastify();
 
-        app.register(postsRoutes)
+    app.decorate("transactions", {
+      posts: {
+        getById: jest.fn(),
+        getAll: jest.fn().mockReturnValue(mockPosts),
+        create: jest.fn(),
+      },
+      reels: {
+        getAll: jest.fn(),
+      },
+      tagged: {
+        getAll: jest.fn(),
+      },
+    });
 
-        const response = await app.inject({
-            method: "GET",
-            url: "/posts",
-        })
+    app.register(postsRoutes);
 
-        expect(response.statusCode).toBe(200)
-        expect(JSON.parse(response.payload)).toEqual(mockPosts)
-    })
-})
+    const response = await app.inject({
+      method: "GET",
+      url: "/posts",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual(mockPosts);
+  });
+});

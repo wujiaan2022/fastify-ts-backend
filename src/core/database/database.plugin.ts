@@ -10,8 +10,11 @@ declare module "fastify" {
     interface FastifyInstance {
         db: Database.Database
         transactions: {
-            posts: any // keep or replace with a more specific type
+            posts: any
             reels: {
+                getAll: () => any[]
+            }
+            tagged: {
                 getAll: () => any[]
             }
         }

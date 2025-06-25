@@ -31,9 +31,15 @@ export const createTransactionHelpers = (db: Database) => {
         getAll: () => statements.getAllReels.all(),
     }
 
+    // ✅ Add this
+    const tagged = {
+        getAll: () => statements.getAllReels.all(),
+    }
+
     return {
         posts,
         reels, // ✅ Include in return
+        tagged, // ✅ Include in return
     }
 }
 
